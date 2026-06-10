@@ -2,26 +2,32 @@
 
 提供常用日期时间的获取、格式化及计算功能
 
-本模块依赖系统本地时间，请确保当前系统时区为上海时间（Asia/Shanghai，UTC+8）
+本模块统一使用上海时间（UTC+8），避免本地环境和 Cloudflare Worker 默认 UTC
+导致日期任务提前或延后。
 """
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 
 class DateTime:
     """日期时间工具类，提供常用日期时间的获取、格式化与计算功能
 
-    本类所有方法均基于系统本地时间（当前为上海时间 Asia/Shanghai，UTC+8）
+    本类所有方法均基于上海时间（Asia/Shanghai，UTC+8）。
     """
 
     @staticmethod
+    def _shanghai_now() -> datetime:
+        """获取上海时间的无时区 datetime，兼容原有调用方。"""
+        return (datetime.now(UTC) + timedelta(hours=8)).replace(tzinfo=None)
+
+    @staticmethod
     def now() -> datetime:
-        """获取当前系统本地时间
+        """获取当前上海时间
 
         Returns:
-            datetime: 当前系统本地日期时间对象
+            datetime: 当前上海日期时间对象
         """
-        return datetime.now()
+        return DateTime._shanghai_now()
 
     @staticmethod
     def current_date() -> date:
@@ -34,7 +40,7 @@ class DateTime:
             >>> DateTime.date()
             datetime.date(2026, 4, 2)
         """
-        return datetime.now().date()
+        return DateTime._shanghai_now().date()
 
     @staticmethod
     def year() -> int:
@@ -43,7 +49,7 @@ class DateTime:
         Returns:
             int: 当前年份，例如 2026
         """
-        return datetime.now().year
+        return DateTime._shanghai_now().year
 
     @staticmethod
     def month() -> int:
@@ -52,7 +58,7 @@ class DateTime:
         Returns:
             int: 当前月份，范围 1-12
         """
-        return datetime.now().month
+        return DateTime._shanghai_now().month
 
     @staticmethod
     def day() -> int:
@@ -61,7 +67,7 @@ class DateTime:
         Returns:
             int: 当前日，范围 1-31
         """
-        return datetime.now().day
+        return DateTime._shanghai_now().day
 
     @staticmethod
     def week() -> int:
@@ -74,7 +80,7 @@ class DateTime:
             >>> DateTime.week()  # 假设今天是周四
             4
         """
-        return datetime.now().isoweekday()
+        return DateTime._shanghai_now().isoweekday()
 
     @staticmethod
     def format_timedelta(delta: timedelta) -> str:

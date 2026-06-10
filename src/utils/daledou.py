@@ -1,10 +1,11 @@
 import re
-from typing import Optional, Pattern, Any
+from typing import TYPE_CHECKING, Optional, Pattern, Any
 
 from src.utils.client import Client
 from src.utils.log import qq_logger
 
-from src.utils.config import ConfigResolver
+if TYPE_CHECKING:
+    from src.utils.config import ConfigResolver
 
 
 class DaLeDou:
@@ -14,7 +15,7 @@ class DaLeDou:
         self,
         qq: str,
         client: Client,
-        config_resolver: ConfigResolver,
+        config_resolver: "ConfigResolver",
     ):
         self._qq = qq
         self._client = client

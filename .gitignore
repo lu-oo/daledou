@@ -7,5 +7,25 @@ __pycache__/
 log/
 *.log
 
+.env*
+.dev.vars*
+secrets*.json
+
 config/accounts/*.yaml
 config/dld_cookie.yaml
+config/run_token.yaml
+
+node_modules/
+cloudflare/.venv/
+cloudflare/.venv-workers/
+cloudflare/python_modules/
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/.env*
+cloudflare/.dev.vars*
+cloudflare/secrets*.json
+cloudflare_worker/node_modules/
+cloudflare_worker/.wrangler/
+cloudflare_worker/.env*
+cloudflare_worker/.dev.vars*
+cloudflare_worker/secrets*.json

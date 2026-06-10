@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "daledou-cloud",
+  "main": "../cloudflare_worker/src/index.js",
+  "compatibility_date": "2026-06-10",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "triggers": {
+    "crons": [
+      "1 5 * * *",
+      "1 12 * * *"
+    ]
+  },
+  "queues": {
+    "producers": [
+      {
+        "queue": "daledou-cloud-queue",
+        "binding": "DALEDOU_QUEUE"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "daledou-cloud-queue",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 2,
+        "dead_letter_queue": "daledou-cloud-dlq"
+      }
+    ]
+  }
+}

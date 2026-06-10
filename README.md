@@ -56,7 +56,7 @@ uv run main.py -h
 uv run main.py
 ```
 
-> 你需要确保系统时间是上海时间（Asia/Shanghai，UTC+8）
+> 日期、星期和月份判断已统一按北京时间（Asia/Shanghai，UTC+8）计算。本地运行仍建议确认系统时间没有明显漂移；Cloudflare Worker 云端运行不依赖机器所在时区。
 
 ## 命名约定
 
