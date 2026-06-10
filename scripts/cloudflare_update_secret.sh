@@ -3,23 +3,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLOUDFLARE_DIR="$ROOT/cloudflare"
-NODE_VERSION_REQUIRED="v22.12.0"
-NODE_2212_BIN="$HOME/.nvm/versions/node/v22.12.0/bin"
+# shellcheck source=cloudflare_node.sh
+. "$ROOT/scripts/cloudflare_node.sh"
 
-if [ -x "$NODE_2212_BIN/node" ]; then
-  export PATH="$NODE_2212_BIN:$PATH"
-elif [ -s "$HOME/.nvm/nvm.sh" ]; then
-  # shellcheck disable=SC1090
-  . "$HOME/.nvm/nvm.sh"
-  nvm use 22.12.0 >/dev/null
-fi
-
-NODE_VERSION="$(node --version 2>/dev/null || true)"
-if [ "$NODE_VERSION" != "$NODE_VERSION_REQUIRED" ]; then
-  echo "Node 版本不正确：当前 ${NODE_VERSION:-未找到}，需要 $NODE_VERSION_REQUIRED" >&2
-  echo "本脚本不会安装 Node。请先准备已有 Node 22.12.0 后重试。" >&2
-  exit 1
-fi
+ensure_cloudflare_node
 
 usage() {
   cat >&2 <<'EOF'

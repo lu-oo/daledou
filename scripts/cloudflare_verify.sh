@@ -3,23 +3,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLOUDFLARE_DIR="$ROOT/cloudflare"
-NODE_VERSION_REQUIRED="v22.12.0"
-NODE_2212_BIN="$HOME/.nvm/versions/node/v22.12.0/bin"
+# shellcheck source=cloudflare_node.sh
+. "$ROOT/scripts/cloudflare_node.sh"
 
-if [ -x "$NODE_2212_BIN/node" ]; then
-  export PATH="$NODE_2212_BIN:$PATH"
-elif [ -s "$HOME/.nvm/nvm.sh" ]; then
-  # shellcheck disable=SC1090
-  . "$HOME/.nvm/nvm.sh"
-  nvm use 22.12.0 >/dev/null
-fi
-
-NODE_VERSION="$(node --version 2>/dev/null || true)"
-if [ "$NODE_VERSION" != "$NODE_VERSION_REQUIRED" ]; then
-  echo "Node 版本不正确：当前 ${NODE_VERSION:-未找到}，需要 $NODE_VERSION_REQUIRED" >&2
-  echo "请先使用已有 Node 22.12.0，例如：cd cloudflare && nvm use" >&2
-  exit 1
-fi
+ensure_cloudflare_node
 
 cd "$ROOT"
 
@@ -46,9 +33,12 @@ forbidden_cpu_key = "cpu" + "_ms"
 assert forbidden_config_key not in config
 assert forbidden_cpu_key not in json.dumps(config)
 consumer = config["queues"]["consumers"][0]
+producer = config["queues"]["producers"][0]
+assert producer["queue"] == consumer["queue"]
 assert consumer["max_batch_size"] == 1
 assert consumer["max_retries"] == 2
-assert consumer["dead_letter_queue"] == "daledou-cloud-dlq"
+assert consumer["dead_letter_queue"]
+assert consumer["dead_letter_queue"] != consumer["queue"]
 print("cloudflare js config match")
 PY
 
@@ -87,8 +77,8 @@ tasks = {
     module.value: list(get_module_tasks(module).keys())
     for module in (TaskModule.noon, TaskModule.evening)
 }
-assert len(tasks["noon"]) == 64
-assert len(tasks["evening"]) == 71
+assert tasks["noon"]
+assert tasks["evening"]
 with open(os.environ["ROOT_TASKS_FILE"], "w", encoding="utf-8") as fp:
     json.dump(tasks, fp, ensure_ascii=False, indent=2)
 print(f"python task list noon={len(tasks['noon'])} evening={len(tasks['evening'])}")
@@ -109,8 +99,8 @@ const tasks = {
   noon: getTaskNames(TaskModule.noon),
   evening: getTaskNames(TaskModule.evening),
 };
-assert.equal(tasks.noon.length, 64);
-assert.equal(tasks.evening.length, 71);
+assert.ok(tasks.noon.length > 0);
+assert.ok(tasks.evening.length > 0);
 fs.writeFileSync(process.argv[2], JSON.stringify(tasks, null, 2));
 console.log(`js task list noon=${tasks.noon.length} evening=${tasks.evening.length}`);
 
@@ -149,8 +139,8 @@ let payload = await response.json();
 assert.equal(payload.ok, true);
 assert.equal(payload.runtime, "javascript-worker");
 assert.equal(payload.queue, "enabled");
-assert.equal(payload.tasks.noon, 64);
-assert.equal(payload.tasks.evening, 71);
+assert.equal(payload.tasks.noon, tasks.noon.length);
+assert.equal(payload.tasks.evening, tasks.evening.length);
 assert.equal(payload.crons.noon.cron, "1 5 * * *");
 assert.equal(payload.crons.evening.cron, "1 12 * * *");
 

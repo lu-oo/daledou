@@ -3,9 +3,9 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLOUDFLARE_DIR="$ROOT/cloudflare"
-NODE_VERSION_REQUIRED="v22.12.0"
-NODE_2212_BIN="$HOME/.nvm/versions/node/v22.12.0/bin"
 DRY_RUN="false"
+# shellcheck source=cloudflare_node.sh
+. "$ROOT/scripts/cloudflare_node.sh"
 
 usage() {
   cat >&2 <<'EOF'
@@ -35,20 +35,7 @@ case "${1:-}" in
     ;;
 esac
 
-if [ -x "$NODE_2212_BIN/node" ]; then
-  export PATH="$NODE_2212_BIN:$PATH"
-elif [ -s "$HOME/.nvm/nvm.sh" ]; then
-  # shellcheck disable=SC1090
-  . "$HOME/.nvm/nvm.sh"
-  nvm use 22.12.0 >/dev/null
-fi
-
-NODE_VERSION="$(node --version 2>/dev/null || true)"
-if [ "$NODE_VERSION" != "$NODE_VERSION_REQUIRED" ]; then
-  echo "Node 版本不正确：当前 ${NODE_VERSION:-未找到}，需要 $NODE_VERSION_REQUIRED" >&2
-  echo "本脚本不会安装 Node。请先准备已有 Node 22.12.0 后重试。" >&2
-  exit 1
-fi
+ensure_cloudflare_node
 
 echo "==> 代码更新部署前验证"
 cd "$ROOT"
@@ -70,4 +57,4 @@ npx --yes wrangler deploy --config wrangler.jsonc
 
 echo "==> 完成。已有 DALEDOU_COOKIES、RUN_TOKEN、Queue 和 Cron 配置会继续沿用。"
 echo "可使用以下命令查看日志："
-echo "cd cloudflare && nvm use && npx --yes wrangler tail"
+echo "cd cloudflare && npx --yes wrangler tail"
