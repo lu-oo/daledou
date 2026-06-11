@@ -163,6 +163,7 @@ async def 分享(d: DaLeDou):
 async def 好友(d: DaLeDou):
     """乐斗好友BOSS"""
     count: int = d.config("好友.贡献药水.count")
+    fight_count: int = d.config("好友.乐斗次数")
     for _ in range(count):
         # 使用贡献药水*1
         await d.get("cmd=use&id=3038&store_type=1&page=1")
@@ -171,15 +172,36 @@ async def 好友(d: DaLeDou):
             break
         d.log(d.find())
 
-    # 好友首页
-    await d.get("cmd=friendlist&page=1")
-    for u in d.findall(r"侠：.*?B_UID=(\d+)"):
+    friend_ids = []
+    for page in range(1, 6):
+        # 好友首页
+        await d.get(f"cmd=friendlist&page={page}")
+        ids = d.findall(r"侠：.*?cmd=fight&amp;B_UID=(\d+)")
+        if not ids:
+            if page == 1:
+                d.log("没有可乐斗好友")
+            break
+        friend_ids.extend(ids)
+        if len(friend_ids) >= fight_count:
+            break
+
+    if not friend_ids:
+        return
+
+    fight_success_count = 0
+    for i in range(fight_count):
+        friend_round, friend_index = divmod(i, len(friend_ids))
+        u = friend_ids[friend_index]
         # 乐斗
         await d.get(f"cmd=fight&B_UID={u}")
         if "使用规则" in d.html:
             d.log(d.find(r"】</p><p>(.*?)<br />"))
             break
         d.log(d.find(r"<br />(.*?)，"))
+        fight_success_count += 1
+        if "体力值不足" in d.html:
+            break
+    d.log(f"好友乐斗 -> {fight_success_count}/{fight_count}")
 
 
 @register()
@@ -1338,7 +1360,7 @@ async def 侠客岛(d: DaLeDou):
             d.log(f"{name} -> {duration}")
         return
 
-    config: set[str] = set(d.config("侠客岛.侠客行"))
+    min_level = 5
     free_refresh_count = d.find(r"免费刷新剩余：(\d+)")
     if free_refresh_count is None:
         d.log("获取免费刷新剩余失败，将免费次数重置为0")
@@ -1347,7 +1369,7 @@ async def 侠客岛(d: DaLeDou):
         free_refresh_count = int(free_refresh_count)
 
     for p in pos:
-        for _ in range(5):
+        for _ in range(20):
             # 侠客行
             await d.get("cmd=knight_island&op=viewmissionindex")
             reward = d.find(rf'pos={p}">接受.*?任务奖励：([^<]+)')
@@ -1355,9 +1377,12 @@ async def 侠客岛(d: DaLeDou):
             # 接受
             await d.get(f"cmd=knight_island&op=viewmissiondetail&pos={p}")
             task_name = d.find(r"([^>]+?)（")
+            level = d.find(r"需要.*?(\d+)级侠士")
+            if level is None:
+                level = "0"
             d.log(f"{task_name} -> {reward}")
 
-            if reward not in config and free_refresh_count > 0:
+            if int(level) < min_level and free_refresh_count > 0:
                 # 刷新
                 await d.get(f"cmd=knight_island&op=refreshmission&pos={p}")
                 d.log(f"{task_name} -> {d.find(r'斗豆）<br />(.*?)<br />')}")

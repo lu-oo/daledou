@@ -119,7 +119,7 @@ async def c_帮派商会(d: DaLeDou):
 async def c_任务派遣中心(d: DaLeDou):
     """
     领取奖励: 最多3次
-    接受: 最多3次（优先S、B级，如果没有免费刷新次数则选择A级）
+    接受: 每日最多5次（优先S、A级，免费刷新结束后才接受B级）
     """
     # 任务派遣中心
     await d.get("cmd=missionassign&subtype=0")
@@ -134,19 +134,39 @@ async def c_任务派遣中心(d: DaLeDou):
     fail_ids = set()
     is_maximums = False
     is_has_free_refresh_count = True
-    for _ in range(5):
+    for _ in range(20):
         # 任务派遣中心
         await d.get("cmd=missionassign&subtype=0")
+        progress = d.findall(r"今日可接受：(\d+)/(\d+)")
+        if progress:
+            accept_count = int(progress[0][0])
+            accept_limit = int(progress[0][1])
+            if accept_count >= accept_limit:
+                is_maximums = True
+                break
+
         S_ids = d.findall(r'-S&nbsp;所需时间.*?_id=(\d+)">接受')
         A_ids = d.findall(r'-A&nbsp;所需时间.*?_id=(\d+)">接受')
         B_ids = d.findall(r'-B&nbsp;所需时间.*?_id=(\d+)">接受')
 
-        _ids = S_ids + B_ids
+        _ids = S_ids + A_ids
 
         if not is_has_free_refresh_count:
-            _ids = A_ids
-            if set(_ids).issubset(fail_ids):
-                break
+            _ids = S_ids + A_ids + B_ids
+
+        if not _ids or set(_ids).issubset(fail_ids):
+            if is_has_free_refresh_count:
+                # 任务派遣中心
+                await d.get("cmd=missionassign&subtype=0")
+                if "本次消耗：0斗豆" in d.html:
+                    # 刷新任务
+                    await d.get("cmd=missionassign&subtype=3")
+                    d.log("刷新任务 -> 免费刷新成功")
+                    continue
+                d.log("刷新任务 -> 没有免费刷新次数了")
+                is_has_free_refresh_count = False
+                continue
+            break
 
         for _id in _ids:
             # 接受

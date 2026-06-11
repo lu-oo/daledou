@@ -134,8 +134,9 @@ async function 分享(d) {
 register("分享", 分享);
 
 async function 好友(d) {
-  var count, u;
+  var count, fight_count, fight_success_count, friend_ids, friend_index, friend_round, i, ids, page, u;
   count = d.config("好友.贡献药水.count");
+  fight_count = d.config("好友.乐斗次数");
   for (let _ of pyRange(count)) {
     await d.get("cmd=use&id=3038&store_type=1&page=1");
     if ((contains(d.html, "使用规则"))) {
@@ -144,15 +145,40 @@ async function 好友(d) {
     }
     d.log(d.find());
   }
-  await d.get("cmd=friendlist&page=1");
-  for (let u of d.findall("侠：.*?B_UID=(\\d+)")) {
+  friend_ids = [];
+  for (let page of pyRange(1, 6)) {
+    await d.get(`cmd=friendlist&page=${page}`);
+    ids = d.findall("侠：.*?cmd=fight&amp;B_UID=(\\d+)");
+    if (!pyTruthy(ids)) {
+      if ((page === 1)) {
+        d.log("没有可乐斗好友");
+      }
+      break;
+    }
+    friend_ids.push(...ids);
+    if ((pyLen(friend_ids) >= fight_count)) {
+      break;
+    }
+  }
+  if (!pyTruthy(friend_ids)) {
+    return;
+  }
+  fight_success_count = 0;
+  for (let i of pyRange(fight_count)) {
+    [friend_round, friend_index] = pyDivmod(i, pyLen(friend_ids));
+    u = friend_ids[friend_index];
     await d.get(`cmd=fight&B_UID=${u}`);
     if ((contains(d.html, "使用规则"))) {
       d.log(d.find("】</p><p>(.*?)<br />"));
       break;
     }
     d.log(d.find("<br />(.*?)，"));
+    fight_success_count = pyAdd(fight_success_count, 1);
+    if ((contains(d.html, "体力值不足"))) {
+      break;
+    }
   }
+  d.log(`好友乐斗 -> ${fight_success_count}/${fight_count}`);
 }
 
 register("好友", 好友);
@@ -1285,7 +1311,7 @@ async function 深渊之潮(d) {
 register("深渊之潮", 深渊之潮);
 
 async function 侠客岛(d) {
-  var config, duration, free_refresh_count, name, p, pos, reward, task_name;
+  var duration, free_refresh_count, level, min_level, name, p, pos, reward, task_name;
   await d.get("cmd=knight_island&op=viewmissionindex");
   pos = d.findall("viewmissiondetail&amp;pos=(\\d+)");
   if (!pyTruthy(pos)) {
@@ -1294,7 +1320,7 @@ async function 侠客岛(d) {
     }
     return;
   }
-  config = pySet(d.config("侠客岛.侠客行"));
+  min_level = 5;
   free_refresh_count = d.find("免费刷新剩余：(\\d+)");
   if ((free_refresh_count === null)) {
     d.log("获取免费刷新剩余失败，将免费次数重置为0");
@@ -1303,13 +1329,17 @@ async function 侠客岛(d) {
     free_refresh_count = pyInt(free_refresh_count);
   }
   for (let p of pos) {
-    for (let _ of pyRange(5)) {
+    for (let _ of pyRange(20)) {
       await d.get("cmd=knight_island&op=viewmissionindex");
       reward = d.find(`pos=${p}">接受.*?任务奖励：([^<]+)`);
       await d.get(`cmd=knight_island&op=viewmissiondetail&pos=${p}`);
       task_name = d.find("([^>]+?)（");
+      level = d.find("需要.*?(\\d+)级侠士");
+      if ((level === null)) {
+        level = "0";
+      }
       d.log(`${task_name} -> ${reward}`);
-      if (((!contains(config, reward)) && (free_refresh_count > 0))) {
+      if (((pyInt(level) < min_level) && (free_refresh_count > 0))) {
         await d.get(`cmd=knight_island&op=refreshmission&pos=${p}`);
         d.log(`${task_name} -> ${d.find("斗豆）<br />(.*?)<br />")}`);
         free_refresh_count -= 1;

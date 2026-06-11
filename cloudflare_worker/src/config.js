@@ -46,6 +46,7 @@ export const DEFAULT_CONFIG = {
       }
     },
     "好友": {
+      "乐斗次数": 20,
       "贡献药水": {
         "count": 4
       }

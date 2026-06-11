@@ -39,6 +39,7 @@ noon:
         quantity: 0
 
   好友:
+    乐斗次数: 20
     贡献药水:
       count: 4
 

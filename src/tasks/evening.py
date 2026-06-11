@@ -1245,6 +1245,12 @@ async def 神魔转盘(d: DaLeDou):
 
 @register()
 async def 乐斗驿站(d: DaLeDou):
+    # 乐斗驿站
+    await d.get("cmd=newAct&subtype=167&op=0")
+    if "cmd=newAct&amp;subtype=167&amp;op=2" not in d.html:
+        d.log("没有免费领取")
+        return
+
     # 领取
     await d.get("cmd=newAct&subtype=167&op=2")
     d.log(d.find())
@@ -1300,7 +1306,12 @@ async def 乐斗菜单(d: DaLeDou):
 async def 周周礼包(d: DaLeDou):
     # 周周礼包
     await d.get("cmd=weekgiftbag&sub=0")
-    if _id := d.find(r';id=(\d+)">领取'):
+    gift_ids = d.findall(r"cmd=weekgiftbag&amp;sub=1&amp;id=(\d+).*?>领取")
+    if not gift_ids:
+        d.log("没有礼包领取")
+        return
+
+    for _id in gift_ids:
         # 领取
         await d.get(f"cmd=weekgiftbag&sub=1&id={_id}")
         d.log(d.find())

@@ -98,7 +98,7 @@ async function c_帮派商会(d) {
 }
 
 async function c_任务派遣中心(d) {
-  var A_ids, B_ids, S_ids, _id, _ids, fail_ids, info, is_has_free_refresh_count, is_maximums, task_name;
+  var A_ids, B_ids, S_ids, _id, _ids, accept_count, accept_limit, fail_ids, info, is_has_free_refresh_count, is_maximums, progress, task_name;
   await d.get("cmd=missionassign&subtype=0");
   for (let _id of d.findall("0时0分.*?mission_id=(.*?)\">查看")) {
     await d.get(`cmd=missionassign&subtype=1&mission_id=${_id}`);
@@ -109,17 +109,37 @@ async function c_任务派遣中心(d) {
   fail_ids = pySet();
   is_maximums = false;
   is_has_free_refresh_count = true;
-  for (let _ of pyRange(5)) {
+  for (let _ of pyRange(20)) {
     await d.get("cmd=missionassign&subtype=0");
+    progress = d.findall("今日可接受：(\\d+)/(\\d+)");
+    if (pyTruthy(progress)) {
+      accept_count = pyInt(progress[0][0]);
+      accept_limit = pyInt(progress[0][1]);
+      if ((accept_count >= accept_limit)) {
+        is_maximums = true;
+        break;
+      }
+    }
     S_ids = d.findall("-S&nbsp;所需时间.*?_id=(\\d+)\">接受");
     A_ids = d.findall("-A&nbsp;所需时间.*?_id=(\\d+)\">接受");
     B_ids = d.findall("-B&nbsp;所需时间.*?_id=(\\d+)\">接受");
-    _ids = pyAdd(S_ids, B_ids);
+    _ids = pyAdd(S_ids, A_ids);
     if (!pyTruthy(is_has_free_refresh_count)) {
-      _ids = A_ids;
-      if (pyTruthy(pyIsSubset(pySet(_ids), fail_ids))) {
-        break;
+      _ids = pyAdd(pyAdd(S_ids, A_ids), B_ids);
+    }
+    if ((!pyTruthy(_ids) || pyTruthy(pyIsSubset(pySet(_ids), fail_ids)))) {
+      if (pyTruthy(is_has_free_refresh_count)) {
+        await d.get("cmd=missionassign&subtype=0");
+        if ((contains(d.html, "本次消耗：0斗豆"))) {
+          await d.get("cmd=missionassign&subtype=3");
+          d.log("刷新任务 -> 免费刷新成功");
+          continue;
+        }
+        d.log("刷新任务 -> 没有免费刷新次数了");
+        is_has_free_refresh_count = false;
+        continue;
       }
+      break;
     }
     for (let _id of _ids) {
       await d.get(`cmd=missionassign&subtype=2&mission_id=${_id}`);

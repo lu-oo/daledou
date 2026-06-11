@@ -1243,6 +1243,11 @@ async function 神魔转盘(d) {
 register("神魔转盘", 神魔转盘);
 
 async function 乐斗驿站(d) {
+  await d.get("cmd=newAct&subtype=167&op=0");
+  if ((!contains(d.html, "cmd=newAct&amp;subtype=167&amp;op=2"))) {
+    d.log("没有免费领取");
+    return;
+  }
   await d.get("cmd=newAct&subtype=167&op=2");
   d.log(d.find());
 }
@@ -1295,9 +1300,14 @@ async function 乐斗菜单(d) {
 register("乐斗菜单", 乐斗菜单);
 
 async function 周周礼包(d) {
-  var _id;
+  var _id, gift_ids;
   await d.get("cmd=weekgiftbag&sub=0");
-  if (pyTruthy((_id = d.find(";id=(\\d+)\">领取")))) {
+  gift_ids = d.findall("cmd=weekgiftbag&amp;sub=1&amp;id=(\\d+).*?>领取");
+  if (!pyTruthy(gift_ids)) {
+    d.log("没有礼包领取");
+    return;
+  }
+  for (let _id of gift_ids) {
     await d.get(`cmd=weekgiftbag&sub=1&id=${_id}`);
     d.log(d.find());
   }
