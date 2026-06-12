@@ -992,7 +992,7 @@ uv run main.py 123456789.evening.吉利兑
 # Cloudflare 云端版部署前验证
 bash scripts/cloudflare_verify.sh
 
-# Cloudflare 首次部署向导：验证、登录、创建队列、设置 Secret、部署
+# Cloudflare 首次部署向导：验证、读取 API Token、创建队列、设置 Secret、部署
 bash scripts/cloudflare_first_deploy.sh
 
 # Cloudflare 后续代码更新部署：不重新输入 Cookie / RUN_TOKEN

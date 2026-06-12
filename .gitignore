@@ -3,6 +3,7 @@ __pycache__/
 
 .venv
 .vscode
+.cache/
 
 log/
 *.log
@@ -10,6 +11,7 @@ log/
 .env*
 .dev.vars*
 secrets*.json
+deploy/cloudflare-targets.local.json
 
 config/accounts/*.yaml
 config/dld_cookie.yaml

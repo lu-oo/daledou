@@ -1,0 +1,10 @@
+{
+  "targets": [
+    {
+      "name": "primary",
+      "enabled": true,
+      "accountId": "",
+      "apiTokenEnv": "CF_API_TOKEN_PRIMARY"
+    }
+  ]
+}

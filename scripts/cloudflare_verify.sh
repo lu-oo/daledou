@@ -26,6 +26,7 @@ from pathlib import Path
 
 config = json.loads(Path("cloudflare/wrangler.jsonc").read_text(encoding="utf-8"))
 assert config["main"] == "../cloudflare_worker/src/index.js"
+assert "account_id" not in config
 assert "python_workers" not in json.dumps(config)
 assert config["triggers"]["crons"] == ["1 5 * * *", "1 12 * * *"]
 forbidden_config_key = "lim" + "its"
@@ -227,11 +228,16 @@ if ! cmp -s "$ROOT_TASKS_FILE" "$WORKER_TASKS_FILE"; then
 fi
 echo "task list match"
 
-if rg -n "await pyGet\\(d|pyGet\\(d,|\\bself\\b|asyncio|random\\." cloudflare_worker/src/tasks; then
+if command -v rg >/dev/null 2>&1; then
+  if rg -n "await pyGet\\(d|pyGet\\(d,|\\bself\\b|asyncio|random\\." cloudflare_worker/src/tasks; then
+    echo "生成的 JS 任务仍存在未正确转换的 Python 语义" >&2
+    exit 1
+  fi
+elif grep -R -n -E "await pyGet\\(d|pyGet\\(d,|(^|[^[:alnum:]_])self([^[:alnum:]_]|$)|asyncio|random\\." cloudflare_worker/src/tasks; then
   echo "生成的 JS 任务仍存在未正确转换的 Python 语义" >&2
   exit 1
 fi
 echo "generated task syntax match"
 
 cd "$CLOUDFLARE_DIR"
-npx --yes wrangler deploy --dry-run --config wrangler.jsonc
+run_wrangler deploy --dry-run --config wrangler.jsonc

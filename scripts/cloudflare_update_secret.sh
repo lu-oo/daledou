@@ -43,9 +43,9 @@ read_multiline_secret() {
   printf "%s" "$value"
 }
 
-ensure_login() {
+ensure_cloudflare_token_context() {
   cd "$CLOUDFLARE_DIR"
-  npx --yes wrangler whoami >/dev/null || npx --yes wrangler login
+  ensure_cloudflare_auth
 }
 
 update_cookies() {
@@ -59,8 +59,8 @@ update_cookies() {
   unset DALEDOU_COOKIES_VALUE
 
   echo "==> 上传 DALEDOU_COOKIES Secret"
-  ensure_login
-  printf "%s" "$value" | npx --yes wrangler secret put DALEDOU_COOKIES --config wrangler.jsonc
+  ensure_cloudflare_token_context
+  printf "%s" "$value" | run_wrangler secret put DALEDOU_COOKIES --config wrangler.jsonc
 }
 
 update_run_token() {
@@ -78,8 +78,8 @@ update_run_token() {
   fi
 
   echo "==> 上传 RUN_TOKEN Secret"
-  ensure_login
-  printf "%s" "$value" | npx --yes wrangler secret put RUN_TOKEN --config wrangler.jsonc
+  ensure_cloudflare_token_context
+  printf "%s" "$value" | run_wrangler secret put RUN_TOKEN --config wrangler.jsonc
 }
 
 update_account_config() {
@@ -109,8 +109,8 @@ print("account config json match")
 PY
 
   echo "==> 上传 DALEDOU_ACCOUNT_CONFIG Secret"
-  ensure_login
-  npx --yes wrangler secret put DALEDOU_ACCOUNT_CONFIG --config wrangler.jsonc < "$file_path"
+  ensure_cloudflare_token_context
+  run_wrangler secret put DALEDOU_ACCOUNT_CONFIG --config wrangler.jsonc < "$file_path"
 }
 
 case "${1:-}" in

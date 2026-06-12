@@ -72,6 +72,7 @@ evening 每天 20:01 北京时间
 Node.js >= 22.0.0
 uv
 Cloudflare 账号
+Cloudflare API Token
 ```
 
 确认 Node：
@@ -90,6 +91,34 @@ v22.0.0
 
 如果 `node --version` 低于 22，请先用你自己的版本管理工具切换到任意 22+ 版本，或把对应 `node` 放到当前 shell 的 `PATH` 后再执行脚本。
 
+部署脚本默认从以下文件读取 Cloudflare API Token：
+
+```text
+.env.deploy.local
+```
+
+默认变量名是：
+
+```text
+CF_API_TOKEN_PRIMARY
+```
+
+脚本会先读取当前 shell 中的 `CF_API_TOKEN_PRIMARY`，如果没有，再读取 `.env.deploy.local`。
+
+部署目标默认从以下本地配置读取：
+
+```text
+deploy/cloudflare-targets.local.json
+```
+
+首次使用时可以从示例复制：
+
+```bash
+cp deploy/cloudflare-targets.example.json deploy/cloudflare-targets.local.json
+```
+
+然后把 `accountId` 填成当前 Cloudflare 账号 ID。也可以直接导出 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`，或用 `CLOUDFLARE_TARGET_CONFIG`、`CLOUDFLARE_TOKEN_ENV_FILE`、`CLOUDFLARE_TOKEN_ENV` 覆盖默认位置和变量名。脚本不会调用 `wrangler login`。
+
 ## 4. 首次部署
 
 推荐直接运行首次部署向导：
@@ -103,7 +132,7 @@ bash scripts/cloudflare_first_deploy.sh
 1. 检查 Node 版本。
 2. 生成 JS Worker 任务代码。
 3. 校验任务数、Cron、北京时间、Queue 链式执行和 Wrangler dry-run。
-4. 登录 Cloudflare。
+4. 读取 Cloudflare API Token 和 Account ID。
 5. 创建 `daledou-cloud-queue` 和 `daledou-cloud-dlq`。
 6. 部署 Worker。
 7. 上传 `DALEDOU_COOKIES` 和 `RUN_TOKEN` Secret。
@@ -128,7 +157,8 @@ END
 
 ```bash
 cd cloudflare
-npx --yes wrangler login
+export CLOUDFLARE_API_TOKEN=你的API_TOKEN
+export CLOUDFLARE_ACCOUNT_ID=你的ACCOUNT_ID
 npx --yes wrangler queues create daledou-cloud-queue
 npx --yes wrangler queues create daledou-cloud-dlq
 cd ..
@@ -143,7 +173,7 @@ npx --yes wrangler secret put RUN_TOKEN --config wrangler.jsonc
 
 ## 6. 后续代码更新
 
-首次部署成功后，后续改代码不需要重新走首次部署流程。
+首次部署成功后，后续改代码不需要重新走首次部署流程。更新脚本会幂等确认 `wrangler.jsonc` 中的 Queue 已存在；如果刚迁移到新账号且队列不存在，会自动创建。
 
 先 dry-run：
 
