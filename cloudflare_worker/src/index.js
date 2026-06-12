@@ -285,11 +285,17 @@ async function runAccountTask(env, moduleName, qq, taskName) {
   try {
     await task(d);
   } catch (error) {
-    if (error instanceof RequestError) {
-      throw error;
-    }
     const message = error instanceof Error ? `${error.stack || error.message}` : String(error);
     d.log(message, taskName);
+    return {
+      module: moduleName,
+      qq,
+      task: taskName,
+      skipped: false,
+      failed: true,
+      error: error instanceof Error ? error.message : String(error),
+      elapsed: DateTime.format_timedelta(Date.now() - startedAt),
+    };
   }
 
   return {
@@ -313,11 +319,13 @@ async function handleQueueMessage(env, body) {
     throw new Error("Queue 消息缺少 task");
   }
 
+  console.log(JSON.stringify({ event: "queue-message-start", module: moduleName, qq, task: taskName, taskIndex }));
   const result = await runAccountTask(env, moduleName, qq, taskName);
   if (taskIndex !== null) {
     const tasks = getTaskNames(moduleName);
     const nextIndex = taskIndex + 1;
     if (nextIndex < tasks.length) {
+      console.log(JSON.stringify({ event: "queue-message-next", module: moduleName, qq, task: tasks[nextIndex], taskIndex: nextIndex }));
       await env.DALEDOU_QUEUE.send(buildQueueBody(moduleName, qq, tasks[nextIndex], nextIndex));
     } else {
       console.log(JSON.stringify({ event: "queue-sequence-complete", module: moduleName, qq, tasks: tasks.length }));

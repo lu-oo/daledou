@@ -101,10 +101,12 @@ class JsWriter:
     def __init__(self, module_name: str):
         self.module_name = module_name
         self.class_stack: list[str] = []
+        self.class_names: set[str] = set()
 
     def translate_module(self, tree: ast.Module) -> tuple[str, list[str]]:
         lines: list[str] = []
         registered: list[str] = []
+        self.class_names = {node.name for node in tree.body if isinstance(node, ast.ClassDef)}
 
         for node in tree.body:
             if isinstance(node, (ast.Import, ast.ImportFrom)):
@@ -457,6 +459,8 @@ class JsWriter:
     def call(self, node: ast.Call) -> str:
         if isinstance(node.func, ast.Name):
             name = node.func.id
+            if name in self.class_names:
+                return f"new {name}({', '.join(self.expr(arg) for arg in node.args)})"
             if name == "range":
                 return f"pyRange({', '.join(self.expr(arg) for arg in node.args)})"
             if name == "enumerate":

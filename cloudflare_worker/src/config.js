@@ -413,6 +413,7 @@ export const DEFAULT_CONFIG = {
       "黑市商人": null
     },
     "江湖长梦": {
+      "单次最大副本次数": 1,
       "柒承的忙碌日常": {
         "enabled": true,
         "material_name": "追忆香炉",
@@ -506,6 +507,8 @@ export const DEFAULT_CONFIG = {
       }
     },
     "背包": {
+      "最大扫描页数": 35,
+      "最大使用次数": 10,
       "使用": [
         "盒",
         "包",

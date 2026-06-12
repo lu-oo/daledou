@@ -755,7 +755,10 @@ async def 江湖长梦(d: DaLeDou):
         return
 
     config: dict[str, dict] = d.config("江湖长梦")
+    max_copies: int = int(d.config("江湖长梦.单次最大副本次数"))
     for name, data_dict in config.items():
+        if name == "单次最大副本次数":
+            continue
         enabled: bool = data_dict["enabled"]
         if not enabled:
             continue
@@ -792,6 +795,9 @@ async def 江湖长梦(d: DaLeDou):
             if material_quantity == 0:
                 d.log(f"{name} -> {material_name}不足")
                 continue
+            if material_quantity > max_copies:
+                d.log(f"{name} -> 本次最多开启{max_copies}次，剩余留待下次")
+                material_quantity = max_copies
 
             await globals()[name](d, name, ins_id, material_quantity, int(duration))
 
@@ -821,19 +827,29 @@ async def 龙凰之境(d: DaLeDou):
 @register()
 async def 背包(d: DaLeDou):
     use: list[str] = d.config("背包.使用")
+    max_pages = int(d.config("背包.最大扫描页数"))
+    max_uses = int(d.config("背包.最大使用次数"))
     data = []
-    for p in range(1, 50):
+    for p in range(1, max_pages + 1):
         d.log(f"第 {p} 页")
         await d.get(f"cmd=store&store_type=0&page={p}")
         data += d.findall(r'id=(\d+)">(.*?)</a>数量：(\d+)')
         if "下页" not in d.html:
             break
+    if "下页" in d.html:
+        d.log(f"达到最大扫描页数 {max_pages}，本次停止继续翻页")
+
+    used_count = 0
     for _id, material_name, quantity in data:
         if not any(u in material_name for u in use):
             continue
         for _ in range(int(quantity)):
+            if used_count >= max_uses:
+                d.log(f"达到最大使用次数 {max_uses}，本次停止使用道具")
+                return
             # 使用
             await d.get(f"cmd=use&id={_id}")
+            used_count += 1
             if "您使用了" in d.html or "你打开" in d.html:
                 d.log(d.find())
                 continue

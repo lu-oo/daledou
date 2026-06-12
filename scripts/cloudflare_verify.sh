@@ -229,11 +229,11 @@ fi
 echo "task list match"
 
 if command -v rg >/dev/null 2>&1; then
-  if rg -n "await pyGet\\(d|pyGet\\(d,|\\bself\\b|asyncio|random\\." cloudflare_worker/src/tasks; then
+  if rg -n "await pyGet\\(d|pyGet\\(d,|\\bself\\b|asyncio|random\\.|= JiangHuDream\\(" cloudflare_worker/src/tasks; then
     echo "生成的 JS 任务仍存在未正确转换的 Python 语义" >&2
     exit 1
   fi
-elif grep -R -n -E "await pyGet\\(d|pyGet\\(d,|(^|[^[:alnum:]_])self([^[:alnum:]_]|$)|asyncio|random\\." cloudflare_worker/src/tasks; then
+elif grep -R -n -E "await pyGet\\(d|pyGet\\(d,|(^|[^[:alnum:]_])self([^[:alnum:]_]|$)|asyncio|random\\.|= JiangHuDream\\(" cloudflare_worker/src/tasks; then
   echo "生成的 JS 任务仍存在未正确转换的 Python 语义" >&2
   exit 1
 fi

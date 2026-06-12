@@ -143,7 +143,7 @@ class JiangHuDream {
 
 async function 柒承的忙碌日常(d, name, ins_id, material_quantity, duration) {
   var day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -170,7 +170,7 @@ async function 柒承的忙碌日常(d, name, ins_id, material_quantity, duratio
 
 async function 群英拭剑谁为峰(d, name, ins_id, material_quantity, duration) {
   var day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -194,7 +194,7 @@ async function 群英拭剑谁为峰(d, name, ins_id, material_quantity, duratio
 async function 时空守护者(d, name, ins_id, material_quantity, duration) {
   var _ids, adventur, adventure_ids, day, event_id, event_ids, j, k;
   adventur = ({["上前询问"]: [1, 1], ["解释身份"]: [2, 1], ["原地思考"]: [2, 3], ["放她回去"]: [1]});
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -252,7 +252,7 @@ async function 时空守护者(d, name, ins_id, material_quantity, duration) {
 
 async function 倚天屠龙归我心(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -291,7 +291,7 @@ async function 倚天屠龙归我心(d, name, ins_id, material_quantity, duratio
 
 async function 神雕侠侣(d, name, ins_id, material_quantity, duration) {
   var day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -319,7 +319,7 @@ async function 神雕侠侣(d, name, ins_id, material_quantity, duration) {
 async function 雪山藏魂(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, is_conversation, j;
   is_conversation = false;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -368,7 +368,7 @@ async function 雪山藏魂(d, name, ins_id, material_quantity, duration) {
 
 async function 桃花自古笑春风(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -401,7 +401,7 @@ async function 桃花自古笑春风(d, name, ins_id, material_quantity, duratio
 
 async function 战乱襄阳(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -432,7 +432,7 @@ async function 战乱襄阳(d, name, ins_id, material_quantity, duration) {
 
 async function 天涯浪子(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -473,7 +473,7 @@ async function 天涯浪子(d, name, ins_id, material_quantity, duration) {
 
 async function 全真古墓意难平(d, name, ins_id, material_quantity, duration) {
   var day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -529,7 +529,7 @@ async function 全真古墓意难平(d, name, ins_id, material_quantity, duratio
 
 async function 南海有岛名侠客(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -562,7 +562,7 @@ async function 南海有岛名侠客(d, name, ins_id, material_quantity, duratio
 
 async function 老鹅的圣诞冒险(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -611,7 +611,7 @@ async function 老鹅的圣诞冒险(d, name, ins_id, material_quantity, duratio
 
 async function 世外桃源梦一场(d, name, ins_id, material_quantity, duration) {
   var adventure_ids, day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -648,7 +648,7 @@ async function 世外桃源梦一场(d, name, ins_id, material_quantity, duratio
 
 async function 中原武林之危(d, name, ins_id, material_quantity, duration) {
   var day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -673,7 +673,7 @@ async function 中原武林之危(d, name, ins_id, material_quantity, duration) 
 
 async function 世界树轮回秘境(d, name, ins_id, material_quantity, duration) {
   var day, event_id, event_ids, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -698,7 +698,7 @@ async function 世界树轮回秘境(d, name, ins_id, material_quantity, duratio
 
 async function 技冠五绝(d, name, ins_id, material_quantity, duration) {
   var day, event_id, j;
-  j = JiangHuDream(d, name, ins_id);
+  j = new JiangHuDream(d, name, ins_id);
   for (let _ of pyRange(material_quantity)) {
     if (!pyTruthy(await j.begin_success())) {
       break;
@@ -721,7 +721,7 @@ async function 技冠五绝(d, name, ins_id, material_quantity, duration) {
 }
 
 async function 江湖长梦(d) {
-  var config, copy_name, data_dict, day, duration, enabled, end_date, ins_data, ins_id, material_id, material_name, material_quantity, month, name, year;
+  var config, copy_name, data_dict, day, duration, enabled, end_date, ins_data, ins_id, material_id, material_name, material_quantity, max_copies, month, name, year;
   await d.get("cmd=jianghudream");
   ins_data = d.findall("id=(\\d+)\">(.*?)<");
   if (!pyTruthy(ins_data)) {
@@ -729,7 +729,11 @@ async function 江湖长梦(d) {
     return;
   }
   config = d.config("江湖长梦");
+  max_copies = pyInt(d.config("江湖长梦.单次最大副本次数"));
   for (let [name, data_dict] of pyItems(config)) {
+    if ((name === "单次最大副本次数")) {
+      continue;
+    }
     enabled = data_dict["enabled"];
     if (!pyTruthy(enabled)) {
       continue;
@@ -765,6 +769,10 @@ async function 江湖长梦(d) {
         d.log(`${name} -> ${material_name}不足`);
         continue;
       }
+      if ((material_quantity > max_copies)) {
+        d.log(`${name} -> 本次最多开启${max_copies}次，剩余留待下次`);
+        material_quantity = max_copies;
+      }
       await __globals[name](d, name, ins_id, material_quantity, pyInt(duration));
     }
   }
@@ -797,10 +805,12 @@ async function 龙凰之境(d) {
 register("龙凰之境", 龙凰之境);
 
 async function 背包(d) {
-  var _id, data, material_name, p, quantity, use;
+  var _id, data, material_name, max_pages, max_uses, p, quantity, use, used_count;
   use = d.config("背包.使用");
+  max_pages = pyInt(d.config("背包.最大扫描页数"));
+  max_uses = pyInt(d.config("背包.最大使用次数"));
   data = [];
-  for (let p of pyRange(1, 50)) {
+  for (let p of pyRange(1, pyAdd(max_pages, 1))) {
     d.log(`第 ${p} 页`);
     await d.get(`cmd=store&store_type=0&page=${p}`);
     data = pyAdd(data, d.findall("id=(\\d+)\">(.*?)</a>数量：(\\d+)"));
@@ -808,12 +818,21 @@ async function 背包(d) {
       break;
     }
   }
+  if ((contains(d.html, "下页"))) {
+    d.log(`达到最大扫描页数 ${max_pages}，本次停止继续翻页`);
+  }
+  used_count = 0;
   for (let [_id, material_name, quantity] of data) {
     if (!pyTruthy(pyAny(use, (u) => (contains(material_name, u))))) {
       continue;
     }
     for (let _ of pyRange(pyInt(quantity))) {
+      if ((used_count >= max_uses)) {
+        d.log(`达到最大使用次数 ${max_uses}，本次停止使用道具`);
+        return;
+      }
       await d.get(`cmd=use&id=${_id}`);
+      used_count = pyAdd(used_count, 1);
       if (((contains(d.html, "您使用了")) || (contains(d.html, "你打开")))) {
         d.log(d.find());
         continue;
