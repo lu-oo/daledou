@@ -17,6 +17,7 @@ from .common import (
     c_幸运金蛋,
     c_客栈同福,
     c_大笨钟,
+    c_领取今日活跃度奖励,
 )
 
 
@@ -68,34 +69,42 @@ async def 华山论剑(d: DaLeDou):
 
     # 更改侠士/选择侠士
     await d.get("cmd=knightarena&op=viewsetknightlist&pos=0")
-    knight_data = dict(d.findall(r">([\u4e00-\u9fff]+) \d+级.*?knightid=(\d+)"))
+    knight_data = {}
+    for knight_name, knight_id in d.findall(
+        r">\s*([^<>\s][^<>]*?)(?:&nbsp;|\s)+\d+级.*?knightid=(\d+)"
+    ):
+        knight_data[knight_name] = knight_id
+
     if not knight_data:
         d.log("战阵调整侠士不足，跳过挑战")
         return
 
     for item in knight_config:
-        is_fail: bool = False
         count: int = item["count"]
         knights: list[str] = item["knights"]
+        configured_knights = knights[:3]
+        selected_knights = []
 
-        # 战阵调整
-        for i, knight in enumerate(knights, 1):
-            if i > 3:
-                break
-            if _id := knight_data.get(knight, None):
-                # 出战
-                await d.get(f"cmd=knightarena&op=setknight&id={_id}&pos={i}&type=1")
-                d.log(f"第{i}战 -> {knight}")
-            else:
-                d.log(f"第{i}战 -> 您没有{knight}")
-                is_fail = True
-                break
-
-        if is_fail:
-            d.log("当前编队出战侠士失败，跳过该编队挑战")
+        if len(configured_knights) < 3:
+            d.log("当前编队配置侠士不足3个，跳过该编队挑战")
             continue
 
-        # 挑战
+        for knight in configured_knights:
+            if _id := knight_data.get(knight, None):
+                selected_knights.append([knight, _id])
+            else:
+                d.log(f"配置侠士缺失 -> {knight}")
+
+        if len(selected_knights) < 3:
+            d.log("当前编队出战侠士不足3个，跳过该编队挑战")
+            continue
+
+        # 战阵调整
+        for i, item in enumerate(selected_knights, 1):
+            knight, _id = item
+            await d.get(f"cmd=knightarena&op=setknight&id={_id}&pos={i}&type=1")
+            d.log(f"第{i}战 -> {knight}")
+
         for _ in range(count):
             # 免费挑战/开始挑战
             await d.get("cmd=knightarena&op=challenge")
@@ -173,12 +182,12 @@ async def 好友(d: DaLeDou):
         d.log(d.find())
 
     friend_ids = []
-    for page in range(1, 6):
+    for page in range(2, 12):
         # 好友首页
         await d.get(f"cmd=friendlist&page={page}")
-        ids = d.findall(r"侠：.*?cmd=fight&amp;B_UID=(\d+)")
+        ids = d.findall(r"\d+：.*?cmd=fight&amp;B_UID=(\d+).*?>乐斗</a>")
         if not ids:
-            if page == 1:
+            if page == 2:
                 d.log("没有可乐斗好友")
             break
         friend_ids.extend(ids)
@@ -189,14 +198,14 @@ async def 好友(d: DaLeDou):
         return
 
     fight_success_count = 0
-    for i in range(fight_count):
-        friend_round, friend_index = divmod(i, len(friend_ids))
-        u = friend_ids[friend_index]
+    for u in friend_ids[:fight_count]:
         # 乐斗
         await d.get(f"cmd=fight&B_UID={u}")
         if "使用规则" in d.html:
             d.log(d.find(r"】</p><p>(.*?)<br />"))
-            break
+            if "体力值不足" in d.html:
+                break
+            continue
         d.log(d.find(r"<br />(.*?)，"))
         fight_success_count += 1
         if "体力值不足" in d.html:
@@ -944,6 +953,40 @@ async def 问鼎天下_商店兑换(d: DaLeDou):
             d.log(f"{treasure} -> {d.find()}")
 
 
+async def 问鼎天下_助威(d: DaLeDou) -> bool:
+    # 问鼎天下
+    await d.get("cmd=tbattle")
+    cheer_links = d.findall(
+        r"cmd=tbattle&amp;op=(cheerregionbattle|cheerchampionbattle)&amp;id=(\d+)"
+    )
+    if not cheer_links:
+        cheer_name = d.find(r"助威帮派：(.*?)<")
+        if cheer_name is not None:
+            d.log(f"助威帮派 -> {cheer_name}")
+            return True
+        return False
+
+    target_ids = []
+    for config_key in ["问鼎天下.淘汰赛", "问鼎天下.排名赛"]:
+        target_id = d.config(config_key)
+        if target_id is not None:
+            target_ids.append(str(target_id))
+
+    if not target_ids:
+        d.log("你没有设置助威帮派id")
+        return False
+
+    for op, _id in cheer_links:
+        if _id not in target_ids:
+            continue
+        await d.get(f"cmd=tbattle&op={op}&id={_id}")
+        d.log(d.find())
+        return True
+
+    d.log("页面没有配置的助威帮派")
+    return False
+
+
 @register()
 async def 问鼎天下(d: DaLeDou):
     if DateTime.week() == 1:
@@ -951,23 +994,11 @@ async def 问鼎天下(d: DaLeDou):
         await d.get("cmd=tbattle&op=drawreward")
         d.log(d.find())
         await 问鼎天下_商店兑换(d)
-    elif DateTime.week() == 6:
-        # 淘汰赛助威
-        _id = d.config("问鼎天下.淘汰赛")
-        if _id is None:
-            d.log("你没有设置淘汰赛助威帮派id")
-            return
-        await d.get(f"cmd=tbattle&op=cheerregionbattle&id={_id}")
-        d.log(d.find())
-        return
-    elif DateTime.week() == 7:
-        # 排名赛助威
-        _id = d.config("问鼎天下.排名赛")
-        if _id is None:
-            d.log("你没有设置排名赛助威帮派id")
-            return
-        await d.get(f"cmd=tbattle&op=cheerchampionbattle&id={_id}")
-        d.log(d.find())
+
+    is_cheered = await 问鼎天下_助威(d)
+    if DateTime.week() in {6, 7}:
+        if not is_cheered:
+            d.log("页面没有可助威入口")
         return
 
     # 问鼎天下
@@ -1965,23 +1996,7 @@ async def 今日活跃度(d: DaLeDou):
                 for action in actions:
                     await action(d)
 
-    # 今日活跃度
-    await d.get("cmd=liveness")
-    d.log(d.find(r"今日活跃度：(\d+)"))
-    if "帮派总活跃" in d.html:
-        d.log(d.find(r"帮派总活跃：(.*?)<"))
-
-    # 领取今日活跃度礼包
-    for giftbag_id in range(1, 5):
-        await d.get(f"cmd=liveness_getgiftbag&giftbagid={giftbag_id}&action=1")
-        d.log(d.find(r"】<br />(.*?)<p>"))
-
-    # 领取帮派总活跃奖励
-    await d.get("cmd=factionop&subtype=18")
-    if "创建帮派" in d.html:
-        d.log(d.find(r"帮派</a><br />(.*?)<br />"))
-    else:
-        d.log(d.find())
+    await c_领取今日活跃度奖励(d)
 
 
 @register()

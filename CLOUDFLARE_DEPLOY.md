@@ -206,6 +206,7 @@ bash scripts/cloudflare_update_secret.sh run-token
 可选账号覆盖配置：
 
 ```bash
+bash scripts/cloudflare_update_secret.sh account-config
 bash scripts/cloudflare_update_secret.sh account-config /path/to/account-config.json
 ```
 

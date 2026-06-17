@@ -17,6 +17,7 @@ from .common import (
     c_幸运金蛋,
     c_客栈同福,
     c_大笨钟,
+    c_领取今日活跃度奖励,
 )
 
 
@@ -1767,20 +1768,66 @@ async def 登录商店(d: DaLeDou):
 
 @register()
 async def 盛世巡礼(d: DaLeDou):
-    if DateTime.week() != 4:
-        return
-
     for s in range(1, 8):
         # 点击进入
         await d.get(f"cmd=newAct&subtype=150&op=2&sceneId={s}")
         if "他已经给过你礼物了" in d.html:
             d.log(f"地点{s}礼物已领取")
-        elif s == 7 and ("点击继续" not in d.html):
-            d.log(f"地点{s}礼物已领取")
-        elif _id := d.find(r"itemId=(\d+)"):
-            # 收下礼物
-            await d.get(f"cmd=newAct&subtype=150&op=5&itemId={_id}")
-            d.log(d.find(r"礼物<br />(.*?)<br />"))
+            continue
+
+        links = d.findall(
+            r"cmd=newAct&amp;subtype=150&amp;op=([345])&amp;itemId=(\d+)"
+        )
+        if not links:
+            if "还未到开放时间" in d.html:
+                d.log(f"地点{s}还未开放")
+            else:
+                d.log(f"地点{s}没有可继续对话")
+            continue
+
+        entry_links = []
+        entry_keys = set()
+        for op, item_id in links:
+            key = f"{op}:{item_id}"
+            if key in entry_keys:
+                continue
+            entry_keys.add(key)
+            entry_links.append([op, item_id])
+
+        for entry in entry_links:
+            op = entry[0]
+            item_id = entry[1]
+            visited_links = set()
+            for _ in range(10):
+                key = f"{op}:{item_id}"
+                if key in visited_links:
+                    d.log(f"地点{s}对话链重复，停止跟进")
+                    break
+                visited_links.add(key)
+
+                await d.get(f"cmd=newAct&subtype=150&op={op}&itemId={item_id}")
+                if "还未到开放时间" in d.html:
+                    d.log(f"地点{s}还未开放")
+                    break
+                if "他已经给过你礼物了" in d.html:
+                    d.log(f"地点{s}礼物已领取")
+                    break
+                if op == "5":
+                    message = d.find(r"礼物<br />(.*?)<br />")
+                    if message is None:
+                        message = d.find()
+                    d.log(f"地点{s} -> {message}")
+                    break
+
+                next_links = d.findall(
+                    r"cmd=newAct&amp;subtype=150&amp;op=([345])&amp;itemId=(\d+)"
+                )
+                if not next_links:
+                    d.log(f"地点{s}对话结束")
+                    break
+                next_link = next_links[0]
+                op = next_link[0]
+                item_id = next_link[1]
 
 
 @register("5.1礼包")
@@ -1914,3 +1961,8 @@ async def 重阳太白诗会(d: DaLeDou):
     # 领取重阳礼包
     await d.get("cmd=newAct&subtype=168&op=2")
     d.log(d.find(r"<br /><br />(.*?)<br />"))
+
+
+@register()
+async def 今日活跃度(d: DaLeDou):
+    await c_领取今日活跃度奖励(d)

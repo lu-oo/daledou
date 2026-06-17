@@ -214,6 +214,37 @@ async def c_任务派遣中心(d: DaLeDou):
         d.log(f"当前任务 -> {info}")
 
 
+async def c_领取今日活跃度奖励(d: DaLeDou):
+    # 今日活跃度
+    await d.get("cmd=liveness")
+    activity_level = d.find(r"今日活跃度：(\d+)")
+    if activity_level is not None:
+        d.log(activity_level)
+    if "帮派总活跃" in d.html:
+        d.log(d.find(r"帮派总活跃：(.*?)<"))
+
+    # 领取今日活跃度礼包
+    await d.get("cmd=liveness_getgiftbag&action=0")
+    giftbag_ids = d.findall(r"giftbagid=(\d+)(?:&amp;|&)action=1")
+    if not giftbag_ids:
+        d.log("没有可领取今日活跃度礼包")
+    else:
+        received_ids = set()
+        for giftbag_id in giftbag_ids:
+            if giftbag_id in received_ids:
+                continue
+            received_ids.add(giftbag_id)
+            await d.get(f"cmd=liveness_getgiftbag&giftbagid={giftbag_id}&action=1")
+            d.log(d.find(r"】<br />(.*?)<p>"))
+
+    # 领取帮派总活跃奖励
+    await d.get("cmd=factionop&subtype=18")
+    if "创建帮派" in d.html:
+        d.log(d.find(r"帮派</a><br />(.*?)<br />"))
+    else:
+        d.log(d.find())
+
+
 async def c_侠士客栈(d: DaLeDou):
     """
     领取奖励: 最多3次

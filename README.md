@@ -1001,6 +1001,7 @@ bash scripts/cloudflare_update_deploy.sh
 # Cloudflare 后续只更新 Cookie / RUN_TOKEN
 bash scripts/cloudflare_update_secret.sh cookies
 bash scripts/cloudflare_update_secret.sh run-token
+bash scripts/cloudflare_update_secret.sh account-config
 bash scripts/cloudflare_update_secret.sh account-config /path/to/account-config.json
 
 # Cloudflare 部署后基础检查：不投递真实任务

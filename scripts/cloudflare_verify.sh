@@ -11,6 +11,7 @@ ensure_cloudflare_node
 cd "$ROOT"
 
 uv run python -m py_compile \
+  scripts/export_cloudflare_account_config.py \
   scripts/generate_cloudflare_worker_js.py \
   scripts/validate_cloudflare_cookies.py \
   src/tasks/common.py \
@@ -60,10 +61,25 @@ echo "cookie validation match"
 TMP_DIR="$(mktemp -d)"
 ROOT_TASKS_FILE="$TMP_DIR/root-tasks.json"
 WORKER_TASKS_FILE="$TMP_DIR/worker-tasks.json"
+ACCOUNT_CONFIG_FILE="$TMP_DIR/account-config.json"
 cleanup() {
   rm -rf "$TMP_DIR"
 }
 trap cleanup EXIT
+
+uv run python scripts/export_cloudflare_account_config.py "$ACCOUNT_CONFIG_FILE"
+uv run python - "$ACCOUNT_CONFIG_FILE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+assert isinstance(data, dict)
+for account, config in data.items():
+    assert account
+    assert isinstance(config, dict)
+print(f"account config export match accounts={len(data)}")
+PY
 
 export ROOT_TASKS_FILE WORKER_TASKS_FILE
 uv run python - <<'PY'

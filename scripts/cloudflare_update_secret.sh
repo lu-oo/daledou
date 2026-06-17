@@ -13,12 +13,13 @@ usage() {
 用法：
   bash scripts/cloudflare_update_secret.sh cookies
   bash scripts/cloudflare_update_secret.sh run-token
+  bash scripts/cloudflare_update_secret.sh account-config
   bash scripts/cloudflare_update_secret.sh account-config /path/to/account-config.json
 
 说明：
   cookies        更新 DALEDOU_COOKIES，一行一个 Cookie，输入 END 结束
   run-token      更新 RUN_TOKEN
-  account-config 更新可选的 DALEDOU_ACCOUNT_CONFIG，要求 JSON 对象文件
+  account-config 更新可选的 DALEDOU_ACCOUNT_CONFIG；不传文件时自动导出 config/accounts/*.yaml
 EOF
 }
 
@@ -84,9 +85,13 @@ update_run_token() {
 
 update_account_config() {
   local file_path="${1:-}"
+  local tmp_dir=""
   if [ -z "$file_path" ]; then
-    usage
-    exit 1
+    tmp_dir="$(mktemp -d)"
+    file_path="$tmp_dir/account-config.json"
+    echo "==> 从 config/accounts/*.yaml 导出 DALEDOU_ACCOUNT_CONFIG"
+    cd "$ROOT"
+    uv run python "$ROOT/scripts/export_cloudflare_account_config.py" "$file_path"
   fi
   if [ ! -f "$file_path" ]; then
     echo "账号覆盖配置文件不存在：$file_path" >&2
@@ -111,6 +116,10 @@ PY
   echo "==> 上传 DALEDOU_ACCOUNT_CONFIG Secret"
   ensure_cloudflare_token_context
   run_wrangler secret put DALEDOU_ACCOUNT_CONFIG --config wrangler.jsonc < "$file_path"
+
+  if [ -n "$tmp_dir" ]; then
+    rm -rf "$tmp_dir"
+  fi
 }
 
 case "${1:-}" in

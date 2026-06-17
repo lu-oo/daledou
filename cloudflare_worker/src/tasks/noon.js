@@ -2,7 +2,7 @@
 // Do not edit it by hand; edit src/tasks/*.py and regenerate.
 
 import { DateTime, Registry, TaskModule, contains, pyAdd, pyAny, pyCount, pyDict, pyDivmod, pyEnumerate, pyGet, pyInt, pyIsSubset, pyItems, pyLen, pyMax, pyMin, pyRange, pySet, pySlice, pySorted, pyStr, pyTruthy, randomChoice, randomSample, sleep } from '../runtime.js';
-import { c_get_material_quantity, c_get_doushenta_cd, c_邪神秘宝, c_帮派商会, c_任务派遣中心, c_侠士客栈, c_帮派巡礼, c_深渊秘境, c_龙凰论武, c_幸运金蛋, c_客栈同福, c_大笨钟 } from './common.js';
+import { c_get_material_quantity, c_get_doushenta_cd, c_邪神秘宝, c_帮派商会, c_任务派遣中心, c_侠士客栈, c_帮派巡礼, c_深渊秘境, c_龙凰论武, c_幸运金蛋, c_客栈同福, c_大笨钟, c_领取今日活跃度奖励 } from './common.js';
 
 const registry = new Registry(TaskModule.noon);
 const register = (taskName, taskFunc) => registry.register(taskName, taskFunc);
@@ -13,7 +13,7 @@ async function 邪神秘宝(d) {
 register("邪神秘宝", 邪神秘宝);
 
 async function 华山论剑(d) {
-  var _id, count, exchange_config, i, is_fail, item, knight, knight_config, knight_data, knights, quantity, quotient, remainder;
+  var _id, configured_knights, count, exchange_config, i, item, knight, knight_config, knight_data, knight_id, knight_name, knights, quantity, quotient, remainder, selected_knights;
   if (!pyTruthy((1 <= DateTime.day() && DateTime.day() <= 26))) {
     return;
   }
@@ -50,31 +50,38 @@ async function 华山论剑(d) {
     return;
   }
   await d.get("cmd=knightarena&op=viewsetknightlist&pos=0");
-  knight_data = pyDict(d.findall(">([\\u4e00-\\u9fff]+) \\d+级.*?knightid=(\\d+)"));
+  knight_data = ({});
+  for (let [knight_name, knight_id] of d.findall(">\\s*([^<>\\s][^<>]*?)(?:&nbsp;|\\s)+\\d+级.*?knightid=(\\d+)")) {
+    knight_data[knight_name] = knight_id;
+  }
   if (!pyTruthy(knight_data)) {
     d.log("战阵调整侠士不足，跳过挑战");
     return;
   }
   for (let item of knight_config) {
-    is_fail = false;
     count = item["count"];
     knights = item["knights"];
-    for (let [i, knight] of pyEnumerate(knights, 1)) {
-      if ((i > 3)) {
-        break;
-      }
+    configured_knights = pySlice(knights, null, 3);
+    selected_knights = [];
+    if ((pyLen(configured_knights) < 3)) {
+      d.log("当前编队配置侠士不足3个，跳过该编队挑战");
+      continue;
+    }
+    for (let knight of configured_knights) {
       if (pyTruthy((_id = pyGet(knight_data, knight, null)))) {
-        await d.get(`cmd=knightarena&op=setknight&id=${_id}&pos=${i}&type=1`);
-        d.log(`第${i}战 -> ${knight}`);
+        selected_knights.push([knight, _id]);
       } else {
-        d.log(`第${i}战 -> 您没有${knight}`);
-        is_fail = true;
-        break;
+        d.log(`配置侠士缺失 -> ${knight}`);
       }
     }
-    if (pyTruthy(is_fail)) {
-      d.log("当前编队出战侠士失败，跳过该编队挑战");
+    if ((pyLen(selected_knights) < 3)) {
+      d.log("当前编队出战侠士不足3个，跳过该编队挑战");
       continue;
+    }
+    for (let [i, item] of pyEnumerate(selected_knights, 1)) {
+      [knight, _id] = item;
+      await d.get(`cmd=knightarena&op=setknight&id=${_id}&pos=${i}&type=1`);
+      d.log(`第${i}战 -> ${knight}`);
     }
     for (let _ of pyRange(count)) {
       await d.get("cmd=knightarena&op=challenge");
@@ -134,7 +141,7 @@ async function 分享(d) {
 register("分享", 分享);
 
 async function 好友(d) {
-  var count, fight_count, fight_success_count, friend_ids, friend_index, friend_round, i, ids, page, u;
+  var count, fight_count, fight_success_count, friend_ids, ids, page, u;
   count = d.config("好友.贡献药水.count");
   fight_count = d.config("好友.乐斗次数");
   for (let _ of pyRange(count)) {
@@ -146,11 +153,11 @@ async function 好友(d) {
     d.log(d.find());
   }
   friend_ids = [];
-  for (let page of pyRange(1, 6)) {
+  for (let page of pyRange(2, 12)) {
     await d.get(`cmd=friendlist&page=${page}`);
-    ids = d.findall("侠：.*?cmd=fight&amp;B_UID=(\\d+)");
+    ids = d.findall("\\d+：.*?cmd=fight&amp;B_UID=(\\d+).*?>乐斗</a>");
     if (!pyTruthy(ids)) {
-      if ((page === 1)) {
+      if ((page === 2)) {
         d.log("没有可乐斗好友");
       }
       break;
@@ -164,13 +171,14 @@ async function 好友(d) {
     return;
   }
   fight_success_count = 0;
-  for (let i of pyRange(fight_count)) {
-    [friend_round, friend_index] = pyDivmod(i, pyLen(friend_ids));
-    u = friend_ids[friend_index];
+  for (let u of pySlice(friend_ids, null, fight_count)) {
     await d.get(`cmd=fight&B_UID=${u}`);
     if ((contains(d.html, "使用规则"))) {
       d.log(d.find("】</p><p>(.*?)<br />"));
-      break;
+      if ((contains(d.html, "体力值不足"))) {
+        break;
+      }
+      continue;
     }
     d.log(d.find("<br />(.*?)，"));
     fight_success_count = pyAdd(fight_success_count, 1);
@@ -877,29 +885,53 @@ async function 问鼎天下_商店兑换(d) {
   }
 }
 
+async function 问鼎天下_助威(d) {
+  var _id, cheer_links, cheer_name, config_key, op, target_id, target_ids;
+  await d.get("cmd=tbattle");
+  cheer_links = d.findall("cmd=tbattle&amp;op=(cheerregionbattle|cheerchampionbattle)&amp;id=(\\d+)");
+  if (!pyTruthy(cheer_links)) {
+    cheer_name = d.find("助威帮派：(.*?)<");
+    if ((cheer_name !== null)) {
+      d.log(`助威帮派 -> ${cheer_name}`);
+      return true;
+    }
+    return false;
+  }
+  target_ids = [];
+  for (let config_key of ["问鼎天下.淘汰赛", "问鼎天下.排名赛"]) {
+    target_id = d.config(config_key);
+    if ((target_id !== null)) {
+      target_ids.push(pyStr(target_id));
+    }
+  }
+  if (!pyTruthy(target_ids)) {
+    d.log("你没有设置助威帮派id");
+    return false;
+  }
+  for (let [op, _id] of cheer_links) {
+    if ((!contains(target_ids, _id))) {
+      continue;
+    }
+    await d.get(`cmd=tbattle&op=${op}&id=${_id}`);
+    d.log(d.find());
+    return true;
+  }
+  d.log("页面没有配置的助威帮派");
+  return false;
+}
+
 async function 问鼎天下(d) {
-  var _id, count, region, remaining_occupy_count;
+  var _id, count, is_cheered, region, remaining_occupy_count;
   if ((DateTime.week() === 1)) {
     await d.get("cmd=tbattle&op=drawreward");
     d.log(d.find());
     await 问鼎天下_商店兑换(d);
-  } else if ((DateTime.week() === 6)) {
-    _id = d.config("问鼎天下.淘汰赛");
-    if ((_id === null)) {
-      d.log("你没有设置淘汰赛助威帮派id");
-      return;
+  }
+  is_cheered = await 问鼎天下_助威(d);
+  if ((contains(pySet([6, 7]), DateTime.week()))) {
+    if (!pyTruthy(is_cheered)) {
+      d.log("页面没有可助威入口");
     }
-    await d.get(`cmd=tbattle&op=cheerregionbattle&id=${_id}`);
-    d.log(d.find());
-    return;
-  } else if ((DateTime.week() === 7)) {
-    _id = d.config("问鼎天下.排名赛");
-    if ((_id === null)) {
-      d.log("你没有设置排名赛助威帮派id");
-      return;
-    }
-    await d.get(`cmd=tbattle&op=cheerchampionbattle&id=${_id}`);
-    d.log(d.find());
     return;
   }
   await d.get("cmd=tbattle");
@@ -1876,7 +1908,7 @@ async function 领取徒弟经验(d) {
 register("领取徒弟经验", 领取徒弟经验);
 
 async function 今日活跃度(d) {
-  var action, actions, activity_level, giftbag_id, has_task_15, has_task_16, num;
+  var action, actions, activity_level, has_task_15, has_task_16, num;
   await d.get("cmd=liveness");
   if (pyTruthy((activity_level = d.find("今日活跃度：(\\d+)")))) {
     num = pyInt(activity_level);
@@ -1899,21 +1931,7 @@ async function 今日活跃度(d) {
       }
     }
   }
-  await d.get("cmd=liveness");
-  d.log(d.find("今日活跃度：(\\d+)"));
-  if ((contains(d.html, "帮派总活跃"))) {
-    d.log(d.find("帮派总活跃：(.*?)<"));
-  }
-  for (let giftbag_id of pyRange(1, 5)) {
-    await d.get(`cmd=liveness_getgiftbag&giftbagid=${giftbag_id}&action=1`);
-    d.log(d.find("】<br />(.*?)<p>"));
-  }
-  await d.get("cmd=factionop&subtype=18");
-  if ((contains(d.html, "创建帮派"))) {
-    d.log(d.find("帮派</a><br />(.*?)<br />"));
-  } else {
-    d.log(d.find());
-  }
+  await c_领取今日活跃度奖励(d);
 }
 
 register("今日活跃度", 今日活跃度);
@@ -2190,5 +2208,5 @@ async function 新春拜年(d) {
 
 register("新春拜年", 新春拜年);
 
-const __globals = { 邪神秘宝: 邪神秘宝, 华山论剑: 华山论剑, 分享: 分享, 好友: 好友, 帮友: 帮友, 侠侣: 侠侣, 武林: 武林, 群侠: 群侠, 结拜: 结拜, 巅峰之战进行中: 巅峰之战进行中, 矿洞: 矿洞, 掠夺: 掠夺, 踢馆: 踢馆, 竞技场: 竞技场, 十二宫: 十二宫, 许愿: 许愿, 抢地盘: 抢地盘, 历练: 历练, 镖行天下: 镖行天下, 幻境: 幻境, 群雄逐鹿: 群雄逐鹿, 画卷迷踪: 画卷迷踪, 门派: 门派, 门派邀请赛: 门派邀请赛, 会武: 会武, 梦想之旅: 梦想之旅, 问鼎天下_商店兑换: 问鼎天下_商店兑换, 问鼎天下: 问鼎天下, 帮派商会: 帮派商会, 帮派远征军_攻击: 帮派远征军_攻击, 帮派远征军_领取: 帮派远征军_领取, 帮派远征军: 帮派远征军, 帮派黄金联赛_参战: 帮派黄金联赛_参战, 帮派黄金联赛: 帮派黄金联赛, 任务派遣中心: 任务派遣中心, 武林盟主: 武林盟主, 全民乱斗: 全民乱斗, 侠士客栈: 侠士客栈, 江湖长梦: 江湖长梦, 大侠回归: 大侠回归, 备战天赋: 备战天赋, 飞升大作战: 飞升大作战, 许愿帮铺: 许愿帮铺, 深渊之潮: 深渊之潮, 侠客岛: 侠客岛, 八卦迷阵: 八卦迷阵, 遗迹商店: 遗迹商店, 异兽洞窟: 异兽洞窟, 悬赏任务: 悬赏任务, 遗迹征伐: 遗迹征伐, 时空遗迹: 时空遗迹, 世界树: 世界树, 龙凰论武: 龙凰论武, 龙凰云集: 龙凰云集, 龙吟破阵: 龙吟破阵, 龙凰之境: 龙凰之境, 增强经脉: 增强经脉, 助阵: 助阵, 查看好友资料: 查看好友资料, 兵法研习: 兵法研习, 挑战陌生人: 挑战陌生人, 任务: 任务, 帮派供奉: 帮派供奉, 帮派任务: 帮派任务, 我的帮派: 我的帮派, 帮派祭坛: 帮派祭坛, 每日奖励: 每日奖励, 领取徒弟经验: 领取徒弟经验, 今日活跃度: 今日活跃度, 仙武修真: 仙武修真, 乐斗黄历: 乐斗黄历, 器魂附魔: 器魂附魔, 兵法: 兵法, get_boss_id: get_boss_id, 点亮: 点亮, 点亮南瓜灯: 点亮南瓜灯, 万圣节: 万圣节, 乐斗能量: 乐斗能量, 大笨钟: 大笨钟, 幸运金蛋: 幸运金蛋, 客栈同福: 客栈同福, 反向历练: 反向历练, 节日福利: 节日福利, 双旦福利: 双旦福利, 金秋福利: 金秋福利, 春节福利: 春节福利, 多倍福利: 多倍福利, 新春拜年: 新春拜年 };
-export { 邪神秘宝, 华山论剑, 分享, 好友, 帮友, 侠侣, 武林, 群侠, 结拜, 巅峰之战进行中, 矿洞, 掠夺, 踢馆, 竞技场, 十二宫, 许愿, 抢地盘, 历练, 镖行天下, 幻境, 群雄逐鹿, 画卷迷踪, 门派, 门派邀请赛, 会武, 梦想之旅, 问鼎天下_商店兑换, 问鼎天下, 帮派商会, 帮派远征军_攻击, 帮派远征军_领取, 帮派远征军, 帮派黄金联赛_参战, 帮派黄金联赛, 任务派遣中心, 武林盟主, 全民乱斗, 侠士客栈, 江湖长梦, 大侠回归, 备战天赋, 飞升大作战, 许愿帮铺, 深渊之潮, 侠客岛, 八卦迷阵, 遗迹商店, 异兽洞窟, 悬赏任务, 遗迹征伐, 时空遗迹, 世界树, 龙凰论武, 龙凰云集, 龙吟破阵, 龙凰之境, 增强经脉, 助阵, 查看好友资料, 兵法研习, 挑战陌生人, 任务, 帮派供奉, 帮派任务, 我的帮派, 帮派祭坛, 每日奖励, 领取徒弟经验, 今日活跃度, 仙武修真, 乐斗黄历, 器魂附魔, 兵法, get_boss_id, 点亮, 点亮南瓜灯, 万圣节, 乐斗能量, 大笨钟, 幸运金蛋, 客栈同福, 反向历练, 节日福利, 双旦福利, 金秋福利, 春节福利, 多倍福利, 新春拜年 };
+const __globals = { 邪神秘宝: 邪神秘宝, 华山论剑: 华山论剑, 分享: 分享, 好友: 好友, 帮友: 帮友, 侠侣: 侠侣, 武林: 武林, 群侠: 群侠, 结拜: 结拜, 巅峰之战进行中: 巅峰之战进行中, 矿洞: 矿洞, 掠夺: 掠夺, 踢馆: 踢馆, 竞技场: 竞技场, 十二宫: 十二宫, 许愿: 许愿, 抢地盘: 抢地盘, 历练: 历练, 镖行天下: 镖行天下, 幻境: 幻境, 群雄逐鹿: 群雄逐鹿, 画卷迷踪: 画卷迷踪, 门派: 门派, 门派邀请赛: 门派邀请赛, 会武: 会武, 梦想之旅: 梦想之旅, 问鼎天下_商店兑换: 问鼎天下_商店兑换, 问鼎天下_助威: 问鼎天下_助威, 问鼎天下: 问鼎天下, 帮派商会: 帮派商会, 帮派远征军_攻击: 帮派远征军_攻击, 帮派远征军_领取: 帮派远征军_领取, 帮派远征军: 帮派远征军, 帮派黄金联赛_参战: 帮派黄金联赛_参战, 帮派黄金联赛: 帮派黄金联赛, 任务派遣中心: 任务派遣中心, 武林盟主: 武林盟主, 全民乱斗: 全民乱斗, 侠士客栈: 侠士客栈, 江湖长梦: 江湖长梦, 大侠回归: 大侠回归, 备战天赋: 备战天赋, 飞升大作战: 飞升大作战, 许愿帮铺: 许愿帮铺, 深渊之潮: 深渊之潮, 侠客岛: 侠客岛, 八卦迷阵: 八卦迷阵, 遗迹商店: 遗迹商店, 异兽洞窟: 异兽洞窟, 悬赏任务: 悬赏任务, 遗迹征伐: 遗迹征伐, 时空遗迹: 时空遗迹, 世界树: 世界树, 龙凰论武: 龙凰论武, 龙凰云集: 龙凰云集, 龙吟破阵: 龙吟破阵, 龙凰之境: 龙凰之境, 增强经脉: 增强经脉, 助阵: 助阵, 查看好友资料: 查看好友资料, 兵法研习: 兵法研习, 挑战陌生人: 挑战陌生人, 任务: 任务, 帮派供奉: 帮派供奉, 帮派任务: 帮派任务, 我的帮派: 我的帮派, 帮派祭坛: 帮派祭坛, 每日奖励: 每日奖励, 领取徒弟经验: 领取徒弟经验, 今日活跃度: 今日活跃度, 仙武修真: 仙武修真, 乐斗黄历: 乐斗黄历, 器魂附魔: 器魂附魔, 兵法: 兵法, get_boss_id: get_boss_id, 点亮: 点亮, 点亮南瓜灯: 点亮南瓜灯, 万圣节: 万圣节, 乐斗能量: 乐斗能量, 大笨钟: 大笨钟, 幸运金蛋: 幸运金蛋, 客栈同福: 客栈同福, 反向历练: 反向历练, 节日福利: 节日福利, 双旦福利: 双旦福利, 金秋福利: 金秋福利, 春节福利: 春节福利, 多倍福利: 多倍福利, 新春拜年: 新春拜年 };
+export { 邪神秘宝, 华山论剑, 分享, 好友, 帮友, 侠侣, 武林, 群侠, 结拜, 巅峰之战进行中, 矿洞, 掠夺, 踢馆, 竞技场, 十二宫, 许愿, 抢地盘, 历练, 镖行天下, 幻境, 群雄逐鹿, 画卷迷踪, 门派, 门派邀请赛, 会武, 梦想之旅, 问鼎天下_商店兑换, 问鼎天下_助威, 问鼎天下, 帮派商会, 帮派远征军_攻击, 帮派远征军_领取, 帮派远征军, 帮派黄金联赛_参战, 帮派黄金联赛, 任务派遣中心, 武林盟主, 全民乱斗, 侠士客栈, 江湖长梦, 大侠回归, 备战天赋, 飞升大作战, 许愿帮铺, 深渊之潮, 侠客岛, 八卦迷阵, 遗迹商店, 异兽洞窟, 悬赏任务, 遗迹征伐, 时空遗迹, 世界树, 龙凰论武, 龙凰云集, 龙吟破阵, 龙凰之境, 增强经脉, 助阵, 查看好友资料, 兵法研习, 挑战陌生人, 任务, 帮派供奉, 帮派任务, 我的帮派, 帮派祭坛, 每日奖励, 领取徒弟经验, 今日活跃度, 仙武修真, 乐斗黄历, 器魂附魔, 兵法, get_boss_id, 点亮, 点亮南瓜灯, 万圣节, 乐斗能量, 大笨钟, 幸运金蛋, 客栈同福, 反向历练, 节日福利, 双旦福利, 金秋福利, 春节福利, 多倍福利, 新春拜年 };

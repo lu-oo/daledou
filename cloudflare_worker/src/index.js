@@ -23,6 +23,7 @@ const MODULE_CRONS = {
 };
 
 const QUEUE_SEND_BATCH_SIZE = 100;
+const TASKS_WITHOUT_STRICT_INDEX_ENTRY = new Set(["盛世巡礼"]);
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -270,7 +271,10 @@ async function runAccountTask(env, moduleName, qq, taskName) {
     throw new RequestError("非大乐斗首页（可能繁忙、维护或 Cookie 失效）");
   }
 
-  if (!indexHtml.includes(`>${taskName}<`)) {
+  if (
+    !TASKS_WITHOUT_STRICT_INDEX_ENTRY.has(taskName)
+    && !indexHtml.includes(`>${taskName}<`)
+  ) {
     d.log("首页未出现该任务入口，跳过", taskName);
     return {
       module: moduleName,

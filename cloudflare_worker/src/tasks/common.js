@@ -184,6 +184,39 @@ async function c_任务派遣中心(d) {
   }
 }
 
+async function c_领取今日活跃度奖励(d) {
+  var activity_level, giftbag_id, giftbag_ids, received_ids;
+  await d.get("cmd=liveness");
+  activity_level = d.find("今日活跃度：(\\d+)");
+  if ((activity_level !== null)) {
+    d.log(activity_level);
+  }
+  if ((contains(d.html, "帮派总活跃"))) {
+    d.log(d.find("帮派总活跃：(.*?)<"));
+  }
+  await d.get("cmd=liveness_getgiftbag&action=0");
+  giftbag_ids = d.findall("giftbagid=(\\d+)(?:&amp;|&)action=1");
+  if (!pyTruthy(giftbag_ids)) {
+    d.log("没有可领取今日活跃度礼包");
+  } else {
+    received_ids = pySet();
+    for (let giftbag_id of giftbag_ids) {
+      if ((contains(received_ids, giftbag_id))) {
+        continue;
+      }
+      received_ids.add(giftbag_id);
+      await d.get(`cmd=liveness_getgiftbag&giftbagid=${giftbag_id}&action=1`);
+      d.log(d.find("】<br />(.*?)<p>"));
+    }
+  }
+  await d.get("cmd=factionop&subtype=18");
+  if ((contains(d.html, "创建帮派"))) {
+    d.log(d.find("帮派</a><br />(.*?)<br />"));
+  } else {
+    d.log(d.find());
+  }
+}
+
 async function c_侠士客栈(d) {
   var config, n, p, t, text;
   await d.get("cmd=warriorinn");
@@ -331,5 +364,5 @@ async function c_大笨钟(d) {
   d.log(d.find("<br /><br /><br />(.*?)<br />"));
 }
 
-const __globals = { c_get_material_quantity: c_get_material_quantity, c_get_doushenta_cd: c_get_doushenta_cd, c_邪神秘宝: c_邪神秘宝, 帮派宝库: 帮派宝库, 交易会所: 交易会所, 兑换商店: 兑换商店, c_帮派商会: c_帮派商会, c_任务派遣中心: c_任务派遣中心, c_侠士客栈: c_侠士客栈, c_帮派巡礼: c_帮派巡礼, c_深渊秘境: c_深渊秘境, c_龙凰论武: c_龙凰论武, c_客栈同福: c_客栈同福, c_幸运金蛋: c_幸运金蛋, c_大笨钟: c_大笨钟 };
-export { c_get_material_quantity, c_get_doushenta_cd, c_邪神秘宝, 帮派宝库, 交易会所, 兑换商店, c_帮派商会, c_任务派遣中心, c_侠士客栈, c_帮派巡礼, c_深渊秘境, c_龙凰论武, c_客栈同福, c_幸运金蛋, c_大笨钟 };
+const __globals = { c_get_material_quantity: c_get_material_quantity, c_get_doushenta_cd: c_get_doushenta_cd, c_邪神秘宝: c_邪神秘宝, 帮派宝库: 帮派宝库, 交易会所: 交易会所, 兑换商店: 兑换商店, c_帮派商会: c_帮派商会, c_任务派遣中心: c_任务派遣中心, c_领取今日活跃度奖励: c_领取今日活跃度奖励, c_侠士客栈: c_侠士客栈, c_帮派巡礼: c_帮派巡礼, c_深渊秘境: c_深渊秘境, c_龙凰论武: c_龙凰论武, c_客栈同福: c_客栈同福, c_幸运金蛋: c_幸运金蛋, c_大笨钟: c_大笨钟 };
+export { c_get_material_quantity, c_get_doushenta_cd, c_邪神秘宝, 帮派宝库, 交易会所, 兑换商店, c_帮派商会, c_任务派遣中心, c_领取今日活跃度奖励, c_侠士客栈, c_帮派巡礼, c_深渊秘境, c_龙凰论武, c_客栈同福, c_幸运金蛋, c_大笨钟 };
