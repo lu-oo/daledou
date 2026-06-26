@@ -11,6 +11,12 @@ from src.utils.daledou import DaLeDou
 from src.utils.date_time import DateTime
 
 
+TASKS_WITHOUT_STRICT_INDEX_ENTRY = {"斗神塔", "盛世巡礼"}
+DEFERRED_TASKS_BY_MODULE = {
+    TaskModule.noon: ("分享",),
+}
+
+
 class TaskRunner:
     """异步任务执行器，支持多账号并发处理"""
 
@@ -47,6 +53,22 @@ class TaskRunner:
         self.stats_lock = asyncio.Lock()
         self.queue = asyncio.Queue()
         self.statistics = Counter()
+
+    def _ordered_task_items(self) -> list[tuple[str, Callable]]:
+        items = list(self.registry.items())
+        deferred_tasks = DEFERRED_TASKS_BY_MODULE.get(self.module, ())
+        if len(items) <= 1 or not deferred_tasks:
+            return items
+
+        deferred_order = {
+            task_name: index for index, task_name in enumerate(deferred_tasks)
+        }
+        regular_items = [item for item in items if item[0] not in deferred_order]
+        deferred_items = sorted(
+            (item for item in items if item[0] in deferred_order),
+            key=lambda item: deferred_order[item[0]],
+        )
+        return regular_items + deferred_items
 
     async def run(self) -> None:
         """
@@ -112,9 +134,12 @@ class TaskRunner:
                         if "邪神秘宝" not in index_html:
                             raise RequestError("非大乐斗首页（可能繁忙或者维护）")
 
-                        for task_name, task_func in self.registry.items():
+                        for task_name, task_func in self._ordered_task_items():
                             try:
-                                if f">{task_name}<" in index_html:
+                                if (
+                                    f">{task_name}<" in index_html
+                                    or task_name in TASKS_WITHOUT_STRICT_INDEX_ENTRY
+                                ):
                                     d.task_name = task_name
                                     await task_func(d)
                             except RequestError:

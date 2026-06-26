@@ -115,42 +115,25 @@ async def 华山论剑(d: DaLeDou):
                 break
 
 
+async def _一键分享(d: DaLeDou) -> bool:
+    await d.get("cmd=sharegame&subtype=6")
+    d.log(d.find(r"】</p>(.*?)<p>"))
+    if "达到当日分享次数上限" in d.html:
+        d.log(d.find(r"</p><p>(.*?)<br />"))
+        return False
+    return True
+
+
 @register()
 async def 分享(d: DaLeDou):
-    is_end: bool = False
-    second = await c_get_doushenta_cd(d)
+    count: int = d.config("分享.count")
 
     # 分享
     await d.get("cmd=sharegame&subtype=1")
-    for _ in range(9):
+    for _ in range(count):
         # 一键分享
-        await d.get("cmd=sharegame&subtype=6")
-        d.log(d.find(r"】</p>(.*?)<p>"))
-        if ("达到当日分享次数上限" in d.html) or is_end:
-            d.log(d.find(r"</p><p>(.*?)<br />"))
+        if not await _一键分享(d):
             break
-
-        for _ in range(10):
-            # 开始挑战 or 挑战下一层
-            await d.get("cmd=towerfight&type=0")
-            d.log(f"斗神塔 -> {d.find()}")
-            await asyncio.sleep(second)
-            if "您战胜了" not in d.html:
-                is_end = True
-                break
-            # 您败给了
-            # 已经到了塔顶
-            # 已经没有剩余的周挑战数
-            # 您需要消耗斗神符才能继续挑战斗神塔
-
-    # 自动挑战
-    await d.get("cmd=towerfight&type=11")
-    d.log(f"斗神塔 -> {d.find()}")
-    await asyncio.sleep(second)
-    if "结束挑战" in d.html:
-        # 结束挑战
-        await d.get("cmd=towerfight&type=7")
-        d.log(f"斗神塔 -> {d.find()}")
 
     if DateTime.week() != 4:
         return
@@ -166,6 +149,35 @@ async def 分享(d: DaLeDou):
         # 重置分享
         await d.get("cmd=sharegame&subtype=7")
         d.log(d.find(r"】</p>(.*?)<p>"))
+
+
+@register()
+async def 斗神塔(d: DaLeDou):
+    count: int = d.config("斗神塔.count")
+    if count <= 0:
+        d.log(f"斗神塔 -> 你设置自动挑战次数为{count}")
+        return
+
+    second = await c_get_doushenta_cd(d)
+    floor_count = 0
+    can_share = True
+    for _ in range(count):
+        # 自动挑战
+        await d.get("cmd=towerfight&type=11")
+        d.log(f"斗神塔 -> {d.find()}")
+        if "结束挑战" not in d.html:
+            break
+
+        await asyncio.sleep(second)
+        # 结束挑战
+        await d.get("cmd=towerfight&type=7")
+        d.log(f"斗神塔 -> {d.find()}")
+
+        floor_count += 1
+        if floor_count == 10:
+            floor_count = 0
+            if can_share:
+                can_share = await _一键分享(d)
 
 
 @register()

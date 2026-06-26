@@ -23,7 +23,10 @@ const MODULE_CRONS = {
 };
 
 const QUEUE_SEND_BATCH_SIZE = 100;
-const TASKS_WITHOUT_STRICT_INDEX_ENTRY = new Set(["盛世巡礼"]);
+const TASKS_WITHOUT_STRICT_INDEX_ENTRY = new Set(["斗神塔", "盛世巡礼"]);
+const DEFERRED_TASKS_BY_MODULE = {
+  [TaskModule.noon]: ["分享"],
+};
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -183,6 +186,23 @@ function resolveTask(moduleName, taskName) {
   return task;
 }
 
+function getOrderedTaskNames(moduleName) {
+  const taskNames = getTaskNames(moduleName);
+  const deferredTasks = DEFERRED_TASKS_BY_MODULE[moduleName] || [];
+  if (taskNames.length <= 1 || deferredTasks.length === 0) {
+    return taskNames;
+  }
+
+  const deferredOrder = new Map(
+    deferredTasks.map((taskName, index) => [taskName, index]),
+  );
+  const regular = taskNames.filter((taskName) => !deferredOrder.has(taskName));
+  const deferred = taskNames
+    .filter((taskName) => deferredOrder.has(taskName))
+    .sort((left, right) => deferredOrder.get(left) - deferredOrder.get(right));
+  return [...regular, ...deferred];
+}
+
 function buildQueueBody(moduleName, qq, taskName, taskIndex = null) {
   const body = {
     module: moduleName,
@@ -206,7 +226,7 @@ async function sendQueueMessages(queue, bodies) {
 }
 
 async function enqueueOrRun(env, moduleName, { taskName = null, qq = null } = {}) {
-  const taskNames = getTaskNames(moduleName);
+  const taskNames = getOrderedTaskNames(moduleName);
   if (taskNames.length === 0) {
     throw new Error(`${moduleName} 模块没有注册任务`);
   }
@@ -326,7 +346,7 @@ async function handleQueueMessage(env, body) {
   console.log(JSON.stringify({ event: "queue-message-start", module: moduleName, qq, task: taskName, taskIndex }));
   const result = await runAccountTask(env, moduleName, qq, taskName);
   if (taskIndex !== null) {
-    const tasks = getTaskNames(moduleName);
+    const tasks = getOrderedTaskNames(moduleName);
     const nextIndex = taskIndex + 1;
     if (nextIndex < tasks.length) {
       console.log(JSON.stringify({ event: "queue-message-next", module: moduleName, qq, task: tasks[nextIndex], taskIndex: nextIndex }));

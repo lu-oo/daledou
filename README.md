@@ -998,7 +998,7 @@ bash scripts/cloudflare_first_deploy.sh
 # Cloudflare 后续代码更新部署：不重新输入 Cookie / RUN_TOKEN
 bash scripts/cloudflare_update_deploy.sh
 
-# Cloudflare 后续只更新 Cookie / RUN_TOKEN
+# Cloudflare 后续只更新 Cookie / RUN_TOKEN / 帐号配置
 bash scripts/cloudflare_update_secret.sh cookies
 bash scripts/cloudflare_update_secret.sh run-token
 bash scripts/cloudflare_update_secret.sh account-config
